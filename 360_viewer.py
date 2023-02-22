@@ -7,9 +7,9 @@ import numpy as np
 import subprocess
 import zmq
 
-# YAW=0
-# PITCH=0
 BIND_ADRESS ="tcp://localhost:5555"
+CHANGE_YAW_CMD ="Parsed_v360_1 yaw"
+CHANGE_PITCH_CMD="Parsed_v360_1 pitch"
 
 class ZmqSender():
     def __init__(self, bind_address):
@@ -69,9 +69,9 @@ class viewWindow:
         elif("gauche" in dir):
             yaw-=5
         if(yaw != 0):
-            self.zmq.onecmd("Parsed_v360_1 yaw {}".format(yaw))
+            self.zmq.onecmd(f"{CHANGE_YAW_CMD} {yaw}")
         if(pitch != 0):
-            self.zmq.onecmd("Parsed_v360_1 pitch {}".format(pitch))
+            self.zmq.onecmd(f"{CHANGE_PITCH_CMD} {pitch}")
             
     def run(self):
         
@@ -79,24 +79,16 @@ class viewWindow:
         height = 368
         
         in_stream = 'rtsp://localhost:8554/mystream'
-        # command = ['ffmpeg', # Using absolute path for example (in Linux replacing 'C:/ffmpeg/bin/ffmpeg.exe' with 'ffmpeg' supposes to work).
-        #         '-rtsp_transport', 'tcp',   # Force TCP (for testing)
-        #         '-max_delay', '30000000',   # 30 seconds (sometimes needed because the stream is from the web).
-        #         '-i', in_stream,
-        #         '-f', 'rawvideo',
-        #         'zmq=tcp\://localhost\:1235',
-        #         '-vf', 'v360=dfisheye:rectilinear:ih_fov=185:iv_fov=185:roll=90:pitch=90',           # Video format is raw video
-        #         '-pix_fmt', 'bgr24',        # bgr24 pixel format matches OpenCV default pixels format.
-        #         '-an', 'pipe:']
         
         command = ['ffmpeg', # Using absolute path for example (in Linux replacing 'C:/ffmpeg/bin/ffmpeg.exe' with 'ffmpeg' supposes to work).
                 '-rtsp_transport', 'tcp',   # Force TCP (for testing)
                 '-max_delay', '30000000',   # 30 seconds (sometimes needed because the stream is from the web).
                 '-i', in_stream,
                 '-f', 'rawvideo',
-                '-filter_complex', '[0]zmq=[a],[a]v360=dfisheye:dfisheye:ih_fov=185:iv_fov=185:roll=90[b],[b]v360=dfisheye:rectilinear:yaw=0:pitch=0',# Video format is raw video
+                '-filter_complex', '[0]zmq=[a],[a]v360=dfisheye:dfisheye:ih_fov=185:iv_fov=185:roll=90[b],[b]v360=dfisheye:rectilinear:yaw=0:pitch=0',
                 '-pix_fmt', 'bgr24',        # bgr24 pixel format matches OpenCV default pixels format.
                 '-an', 'pipe:']
+        
         ffmpeg_process = subprocess.Popen(command, stdout=subprocess.PIPE)
         while True:
             # Read width*height*3 bytes from stdout (1 frame)
@@ -106,11 +98,7 @@ class viewWindow:
                 print('Error reading frame!!!')  # Break the loop in case of an error (too few bytes were read).
                 break
 
-            # Convert the bytes read into a NumPy array, and reshape it to video frame dimensions
             frame = np.frombuffer(raw_frame, np.uint8).reshape((height, width, 3))
-            # Show the video frame
-            #cv2.imshow('image', frame)
-            
             self.view_win.update_img.emit(frame)
 
 if __name__ == '__main__':
