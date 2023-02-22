@@ -9,11 +9,13 @@ import cv2
 # ----------------------------------------------------------------------------------------------------------------------
 class viewerWindow(QMainWindow, Ui_MainWindow):
     update_img = Signal(np.ndarray)
+    width = 736
+    height= 368
     def __init__(self, parent=None):
         
         super(viewerWindow, self).__init__(parent)
         self.setupUi(self)
-        grey = QPixmap(736, 368)
+        grey = QPixmap(self.width, self.height)
         grey.fill(QColor('darkGray'))
         # set the image image to the grey pixmap
         self.label_view.setPixmap(grey)
@@ -30,5 +32,5 @@ class viewerWindow(QMainWindow, Ui_MainWindow):
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
         convert_to_Qt_format = QImage(rgb_image.data, w, h, bytes_per_line, QImage.Format_RGB888)
-        p = convert_to_Qt_format.scaled(736,368, Qt.KeepAspectRatio)
+        p = convert_to_Qt_format.scaled(self.width,self.height, Qt.KeepAspectRatio)
         return QPixmap.fromImage(p)
