@@ -3,13 +3,6 @@ import os
 import sys
 import logging
 
-from cryptography.utils import CryptographyDeprecationWarning
-
-with warnings.catch_warnings():
-    warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
-    import paramiko
-
-
 def resource_path(relative_path):
     """
     Get absolute path to resource, works for dev and for PyInstaller

@@ -1,4 +1,4 @@
-from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import (QApplication)
 from ui_window_overload import *
 import threading
 from utils import *
@@ -8,8 +8,12 @@ import subprocess
 import zmq
 
 BIND_ADRESS ="tcp://localhost:5555"
-CHANGE_YAW_CMD ="Parsed_v360_1 yaw"
-CHANGE_PITCH_CMD="Parsed_v360_1 pitch"
+CHANGE_YAW_CMD ="Parsed_v360_2 yaw"
+CHANGE_PITCH_CMD="Parsed_v360_2 pitch"
+NEW_CMD="Parsed_v360_2 reset_rot 1"
+PAS=5
+YAW=0
+PITCH=0
 
 class ZmqSender():
     def __init__(self, bind_address):
@@ -17,13 +21,15 @@ class ZmqSender():
         self.requester = context.socket(zmq.REQ)
         self.requester.connect(bind_address)
 
-    def onecmd(self, cmd):
-        if cmd == 'EOF':
-            sys.exit(0)
-        print('Sending command:[%s]' % cmd)
-        self.requester.send_string(cmd)
+    def onecmd(self):
+        global YAW, PITCH
+        
+        self.requester.send_string(NEW_CMD)
         message = self.requester.recv()
-        print('Received reply:[%s]' % message)
+        self.requester.send_string(f"{CHANGE_YAW_CMD} {YAW}")
+        message = self.requester.recv()
+        self.requester.send_string(f"{CHANGE_PITCH_CMD} {PITCH}")
+        message = self.requester.recv()
 
 
 class viewWindow:
@@ -53,25 +59,30 @@ class viewWindow:
         self.view_win.show()
         self.view_win.setWindowState(Qt.WindowActive)
         self.app.exec_()
-        #self.view_win.launchUpdateButton.clicked.connect(self.launch_update)
-
 
     def moove_window(self, dir, btn) -> None:
-        print("ici")
-        yaw = 0
-        pitch=0
+        global PITCH, YAW
+        
         if("haut" in dir):
-            pitch+=5
+            PITCH+=PAS
         elif("bas" in dir):
-            pitch-=5
+            PITCH-=PAS
         if("droit" in dir):
-            yaw+=5
+            YAW+=PAS
         elif("gauche" in dir):
-            yaw-=5
-        if(yaw != 0):
-            self.zmq.onecmd(f"{CHANGE_YAW_CMD} {yaw}")
-        if(pitch != 0):
-            self.zmq.onecmd(f"{CHANGE_PITCH_CMD} {pitch}")
+            YAW-=PAS
+            
+        if (PITCH <= -180):
+            PITCH = 360 + PITCH
+        elif (PITCH >= 180):
+            PITCH =  PITCH -360
+        
+        if (YAW <= -180):
+            YAW = 360 + YAW
+        elif (YAW >= 180):
+            YAW = YAW -360
+        
+        self.zmq.onecmd()
             
     def run(self):
         
@@ -85,7 +96,7 @@ class viewWindow:
                 '-max_delay', '30000000',   # 30 seconds (sometimes needed because the stream is from the web).
                 '-i', in_stream,
                 '-f', 'rawvideo',
-                '-filter_complex', '[0]zmq=[a],[a]v360=dfisheye:dfisheye:ih_fov=185:iv_fov=185:roll=90[b],[b]v360=dfisheye:rectilinear:yaw=0:pitch=0',
+                '-filter_complex', '[0]zmq=[a],[a]v360=dfisheye:dfisheye:ih_fov=180:iv_fov=180:roll=90[b],[b]v360=dfisheye:rectilinear:yaw=0:pitch=0',
                 '-pix_fmt', 'bgr24',        # bgr24 pixel format matches OpenCV default pixels format.
                 '-an', 'pipe:']
         
