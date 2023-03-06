@@ -3,9 +3,9 @@
 
 <h1 align="center">
   <br>
-  <img src="./image/app.png" alt="yuzu" width="1000"></a>
+  <img src="./image/app.png" width="1000"></a>
   <br>
-  <b>yuzu</b>
+  <b>360 Video Viewer</b>
   <br>
 </h1>
 
